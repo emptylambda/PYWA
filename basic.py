@@ -25,12 +25,10 @@ pip install lark parse
 """
 
 import logging, sys
-import numpy as np
-
 from lark import Lark
 from lark.indenter import Indenter
-from io import StringIO
-
+from lark import Transformer
+import numpy as np
 
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 logging.info('Library import complete')
@@ -77,4 +75,46 @@ numeric_grammar = r"""
 numeric_parser = Lark(numeric_grammar, parser='lalr')
 input_file = open("./wamit_exampleOutput.out", "r")
 data = input_file.read()
-print(numeric_parser.parse(data).pretty())
+tree = numeric_parser.parse(data)
+# print(tree.pretty())
+
+"""TODO Now we have a parser for our data, next step is to transform the list
+of tokens into a structure (usually tree-like) in order to further extract
+information as we need. """
+
+class WAMITTransformer (Transformer):
+    def preamble(self, args):
+        return "".join(args)
+
+    def wave(self, args):
+        print("WAVE_info: " + str(args[0]))
+        tables = args[1]
+        # print(tables)
+        return tables
+
+    def simple_table(self, args):
+        title = args[0]
+        print(title)
+        tab = np.array(args[1:])
+        print(tab)
+        return tab
+
+    def complex_table(self, args):
+        title = args[0]
+        additional_info = args[1]
+        print(title)
+        print(additional_info)
+        tab = np.array(args[2:])
+        print(tab)
+        return tab
+
+    def additional_info(self, args):
+        return "".join(args)
+
+    index = list
+    row   = list
+    NUM   = float
+    COLNAME = str
+
+
+WAMITTransformer().transform(tree)
